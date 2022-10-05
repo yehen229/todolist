@@ -1,47 +1,99 @@
-<script setup>
-import HelloWorld from './components/HelloWorld.vue'
-import TheWelcome from './components/TheWelcome.vue'
-</script>
-
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="./assets/logo.svg" width="125" height="125" />
-
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
-    </div>
-  </header>
-
-  <main>
-    <TheWelcome />
-  </main>
+  <section id="app" class="todoapp">
+    <header class="header">
+      <h1>todos</h1>
+      <input class="new-todo" placeholder="What needs to be done?" autocomplete="off" autofocus v-model="input"
+        @keyup.enter="addTodo">
+    </header>
+    <section class="main">
+      <input id="toggle-all" class="toggle-all" v-model="allDone" type="checkbox">
+      <label for="toggle-all">Mark all as complete</label>
+      <ul class="todo-list">
+        <li v-for="todo in todos" :key="todo" :class="{ editing: todo === editingTodo, completed: todo.completed }">
+          <div class="view">
+            <input class="toggle" type="checkbox" v-model="todo.completed">
+            <label @dblclick="editTodo(todo)">{{ todo.text }}</label>
+            <button class="destroy" @click="deleteTodo(todo)"></button>
+          </div>
+          <input class="edit" type="text" v-model="todo.text" v-editing-focus="todo === editingTodo"
+            @keyup.enter="doneEdit(todo)" @blur="doneEdit(todo)">
+        </li>
+      </ul>
+    </section>
+    <footer class="footer">
+      <span class="todo-count">
+        <strong>{{todos.length}}</strong> {{ todos.length == 1 ? 'item' : 'items' }}
+      </span>
+      <ul class="filters">
+        <li><a href="#/all">All</a></li>
+        <li><a href="#/active">Active</a></li>
+        <li><a href="#/completed">Completed</a></li>
+      </ul>
+      <button class="clear-completed">
+        Clear completed
+      </button>
+    </footer>
+  </section>
 </template>
 
-<style scoped>
-header {
-  line-height: 1.5;
+<script setup>
+import { ref, watchEffect } from 'vue';
+import './assets/index.css'
+import useLocalStorage from './utils/storage.js'
+
+const storage = useLocalStorage()
+const useStorage = () => {
+  const KEY = 'TODOKEYS'
+  const todos = ref(storage.getItem(KEY) || [])
+  console.log(todos.value)
+  watchEffect(() => {
+    storage.setItem(KEY, todos.value)
+  })
+  return todos
 }
 
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
+const todos = useStorage()
+const input = ref('')
+const editingTodo = ref(null)
+
+
+const addTodo = () => {
+  const text = input.value && input.value.trim()
+  if (text.length === 0) return
+  todos.value.unshift({
+    text,
+    completed: false
+  })
+  input.value = ''
 }
 
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
-
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
+const deleteTodo = todo => {
+  const index = selectTodo(todo)
+  todos.value.splice(index, 1)
 }
+
+const editTodo = todo => {
+  editingTodo.value = todo
+}
+
+const doneEdit = todo => {
+  const index = selectTodo(todo)
+  todos.value[index].text = todo.text.trim()
+  editingTodo.value = null
+}
+
+const selectTodo = todo => {
+  return todos.value.indexOf(todo)
+}
+
+const vEditingFocus = (el, binding) => {
+  binding.value && el.focus()
+}
+
+
+
+</script>
+
+<style lang="scss" scoped>
+
 </style>
